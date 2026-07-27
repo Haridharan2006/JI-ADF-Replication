@@ -1,0 +1,26 @@
+# Dataset
+MILK10K/
+
+# Model checkpoints
+checkpoints/
+
+# Outputs
+outputs/
+
+# Logs
+logs/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
