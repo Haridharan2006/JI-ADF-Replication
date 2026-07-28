@@ -85,25 +85,28 @@ def test(
         # If labels exist, compute loss/metrics
         # ------------------------------------
 
-        if "label" in batch and batch["label"] is not None:
-
-            has_labels = True
+        if "label" in batch:
 
             labels = batch["label"].long().to(
                 device,
                 non_blocking=True,
             )
 
-            losses = criterion(
-                outputs,
-                labels,
-            )
+            # Only compute loss if labels are valid (>= 0)
+            if torch.all(labels >= 0):
 
-            running_loss += losses["total_loss"].item()
+                has_labels = True
 
-            all_labels.extend(
-                labels.cpu().tolist()
-            )
+                losses = criterion(
+                    outputs,
+                    labels,
+                )
+
+                running_loss += losses["total_loss"].item()
+
+                all_labels.extend(
+                    labels.cpu().tolist()
+                )
 
     # ==========================================
     # Save predictions

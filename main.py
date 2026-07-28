@@ -242,14 +242,19 @@ def main():
     ####################################################
     # Test
     ####################################################
-    logger.info("Testing...")
+    RUN_TEST = False
 
-    test_loss, test_metrics = test(
-        model=model,
-        test_loader=test_loader,
-        criterion=criterion,
-        device=device,
-    )
+    if RUN_TEST:
+        logger.info("Testing...")
+
+        test_loss, test_metrics = test(
+            model=model,
+            test_loader=test_loader,
+            criterion=criterion,
+            device=device,
+        )
+
+    logger.info(test_metrics)
 
     logger.info(test_metrics)
 
