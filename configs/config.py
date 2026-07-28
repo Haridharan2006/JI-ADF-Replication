@@ -11,8 +11,8 @@ class Config:
     METADATA_EMBED_DIM = 256
 
     # Training
-    BATCH_SIZE = 16
-    EPOCHS = 50
+    BATCH_SIZE = 8
+    EPOCHS = 1
 
     LEARNING_RATE = 1e-4
     WEIGHT_DECAY = 1e-5
