@@ -254,10 +254,6 @@ def main():
             device=device,
         )
 
-    logger.info(test_metrics)
-
-    logger.info(test_metrics)
-
 
 if __name__ == "__main__":
     main()
