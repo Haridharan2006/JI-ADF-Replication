@@ -190,7 +190,7 @@ def main():
 
         train_loss, train_acc = train_one_epoch(
             model=model,
-            dataloader=train_loader,
+            train_loader=train_loader,
             criterion=criterion,
             optimizer=optimizer,
             device=device,
@@ -198,7 +198,7 @@ def main():
 
         val_loss, metrics = validate(
             model=model,
-            dataloader=val_loader,
+            val_loader=val_loader,
             criterion=criterion,
             device=device,
         )
