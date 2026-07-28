@@ -7,8 +7,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 
 DATASET_DIR = ROOT_DIR / "MILK10K"
 
-TRAIN_IMAGE_DIR = DATASET_DIR / "MILK10K_Training_Input"
-TEST_IMAGE_DIR = DATASET_DIR / "MILK10K_Test_Input"
+TRAIN_IMAGE_DIR = DATASET_DIR / "MILK10k_Training_Input"
+TEST_IMAGE_DIR = DATASET_DIR / "MILK10k_Test_Input"
 
 TRAIN_METADATA = DATASET_DIR / "MILK10k_Training_Metadata.csv"
 TEST_METADATA = DATASET_DIR / "MILK10k_Test_Metadata.csv"
