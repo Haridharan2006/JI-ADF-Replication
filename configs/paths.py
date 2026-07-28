@@ -2,10 +2,12 @@
 
 from pathlib import Path
 
-
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
-DATASET_DIR = ROOT_DIR / "MILK10K"
+# -----------------------------
+# Dataset Location (Google Drive)
+# -----------------------------
+DATASET_DIR = Path("/content/drive/MyDrive/JI-ADF/MILK10K")
 
 TRAIN_IMAGE_DIR = DATASET_DIR / "MILK10k_Training_Input"
 TEST_IMAGE_DIR = DATASET_DIR / "MILK10k_Test_Input"
@@ -15,6 +17,9 @@ TEST_METADATA = DATASET_DIR / "MILK10k_Test_Metadata.csv"
 
 TRAIN_GROUND_TRUTH = DATASET_DIR / "MILK10k_Training_GroundTruth.csv"
 
+# -----------------------------
+# Outputs
+# -----------------------------
 CHECKPOINT_DIR = ROOT_DIR / "checkpoints"
 OUTPUT_DIR = ROOT_DIR / "outputs"
 LOG_DIR = ROOT_DIR / "logs"
