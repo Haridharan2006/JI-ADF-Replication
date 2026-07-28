@@ -168,7 +168,7 @@ def main():
     ####################################################
     # Dynamic Metadata Dimension
     ####################################################
-    sample = full_dataset[0]
+    sample = train_dataset[0]
     metadata_dim = sample["metadata"].shape[0]
 
     logger.info(f"Metadata Dimension: {metadata_dim}")
