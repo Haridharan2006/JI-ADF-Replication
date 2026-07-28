@@ -4,7 +4,7 @@ import torch
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, random_split
-
+from torch.utils.data import Subset
 from configs.config import Config
 from configs.paths import *
 
@@ -26,7 +26,8 @@ from trainer.test import test
 from utils.seed import set_seed
 from utils.logger import get_logger
 from utils.checkpoint import save_checkpoint, load_checkpoint
-
+from utils.training_plots import plot_training_history
+from utils.save_metrics import save_metrics
 
 def main():
 
@@ -34,7 +35,7 @@ def main():
     # Seed & Device
     ####################################################
     set_seed(Config.RANDOM_SEED)
-
+    torch.backends.cudnn.benchmark = True
     logger = get_logger()
 
     device = torch.device(
@@ -65,9 +66,36 @@ def main():
     metadata_processor.fit(metadata_df)
 
     ####################################################
-    # Full Training Dataset
+    # Create Base Dataset (No Transform)
     ####################################################
-    full_dataset = MILK10kDataset(
+    base_dataset = MILK10kDataset(
+        image_dir=TRAIN_IMAGE_DIR,
+        metadata_csv=TRAIN_METADATA,
+        groundtruth_csv=TRAIN_GROUND_TRUTH,
+        metadata_processor=metadata_processor,
+        transform=None,
+    )
+
+    ####################################################
+    # Create Split Indices
+    ####################################################
+    train_size = int(0.8 * len(base_dataset))
+    val_size = len(base_dataset) - train_size
+
+    generator = torch.Generator().manual_seed(
+        Config.RANDOM_SEED
+    )
+
+    train_indices, val_indices = random_split(
+        range(len(base_dataset)),
+        [train_size, val_size],
+        generator=generator,
+    )
+
+    ####################################################
+    # Separate Datasets with Different Transforms
+    ####################################################
+    train_dataset = MILK10kDataset(
         image_dir=TRAIN_IMAGE_DIR,
         metadata_csv=TRAIN_METADATA,
         groundtruth_csv=TRAIN_GROUND_TRUTH,
@@ -75,22 +103,23 @@ def main():
         transform=get_train_transforms(),
     )
 
-    ####################################################
-    # Train / Validation Split
-    ####################################################
-    train_size = int(0.8 * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-
-    generator = torch.Generator().manual_seed(
-        Config.RANDOM_SEED
+    val_dataset = MILK10kDataset(
+        image_dir=TRAIN_IMAGE_DIR,
+        metadata_csv=TRAIN_METADATA,
+        groundtruth_csv=TRAIN_GROUND_TRUTH,
+        metadata_processor=metadata_processor,
+        transform=get_val_transforms(),
     )
 
-    train_dataset, val_dataset = random_split(
-        full_dataset,
-        [train_size, val_size],
-        generator=generator,
+    train_dataset = Subset(
+        train_dataset,
+        train_indices.indices,
     )
 
+    val_dataset = Subset(
+        val_dataset,
+        val_indices.indices,
+    )
     ####################################################
     # Validation Transform (optional)
     ####################################################
@@ -105,7 +134,7 @@ def main():
         train_dataset,
         batch_size=Config.BATCH_SIZE,
         shuffle=True,
-        num_workers=4,
+        num_workers=min(4, os.cpu_count()),
         pin_memory=True,
     )
 
@@ -113,7 +142,7 @@ def main():
         val_dataset,
         batch_size=Config.BATCH_SIZE,
         shuffle=False,
-        num_workers=4,
+        num_workers=min(4, os.cpu_count()),
         pin_memory=True,
     )
 
@@ -132,7 +161,7 @@ def main():
         test_dataset,
         batch_size=Config.BATCH_SIZE,
         shuffle=False,
-        num_workers=4,
+        num_workers=min(4, os.cpu_count()),
         pin_memory=True,
     )
 
@@ -178,8 +207,9 @@ def main():
     ####################################################
     # Training
     ####################################################
+    history = []
     best_f1 = 0.0
-
+    best_epoch = 0
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
     for epoch in range(Config.EPOCHS):
@@ -203,18 +233,36 @@ def main():
             device=device,
         )
 
-        logger.info(f"Train Loss : {train_loss:.4f}")
-        logger.info(f"Train Accuracy : {train_acc:.4f}")
+        logger.info(f"Train Loss        : {train_loss:.4f}")
+        logger.info(f"Train Accuracy    : {train_acc:.2f}%")
 
-        logger.info(f"Validation Loss : {val_loss:.4f}")
-        logger.info(metrics)
+        logger.info(f"Validation Loss   : {val_loss:.4f}")
+        logger.info(f"Accuracy          : {metrics['accuracy']:.4f}")
+        logger.info(f"Balanced Accuracy : {metrics['balanced_accuracy']:.4f}")
+        logger.info(f"Precision         : {metrics['precision']:.4f}")
+        logger.info(f"Recall            : {metrics['recall']:.4f}")
+        logger.info(f"F1 Score          : {metrics['f1_score']:.4f}")
+        history.append({
 
+            "epoch": epoch + 1,
+
+            "train_loss": train_loss,
+            "train_accuracy": train_acc,
+
+            "validation_loss": val_loss,
+            "learning_rate": optimizer.param_groups[0]["lr"],
+            "accuracy": metrics["accuracy"],
+            "balanced_accuracy": metrics["balanced_accuracy"],
+            "precision": metrics["precision"],
+            "recall": metrics["recall"],
+            "f1_score": metrics["f1_score"],
+        })
         scheduler.step(metrics["f1_score"])
 
         if metrics["f1_score"] > best_f1:
 
             best_f1 = metrics["f1_score"]
-
+            best_epoch = epoch + 1
             save_checkpoint(
                 model=model,
                 optimizer=optimizer,
@@ -222,9 +270,34 @@ def main():
                 best_metric=best_f1,
                 filepath=CHECKPOINT_DIR / "best_model.pth",
             )
+            save_checkpoint(
+                model=model,
+                optimizer=optimizer,
+                epoch=epoch,
+                best_metric=best_f1,
+                filepath=CHECKPOINT_DIR / "last_model.pth",
+            )
 
             logger.info("Best model saved.")
+    history_df = pd.DataFrame(history)
 
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    history_df.to_csv(
+        OUTPUT_DIR / "training_history.csv",
+        index=False,
+    )
+    plot_training_history(
+        OUTPUT_DIR / "training_history.csv",
+        OUTPUT_DIR,
+    )
+
+    logger.info(
+        "Training plots saved."
+    )
+    logger.info(
+        "Training history saved."
+    )
     ####################################################
     # Load Best Model
     ####################################################
@@ -238,9 +311,26 @@ def main():
     logger.info(
         f"Loaded best model (Epoch {epoch + 1}, F1 = {best_metric:.4f})"
     )
+    logger.info(f"Best Epoch : {best_epoch}")
+    ####################################################
+    # Evaluate Best Model on Validation Set
+    ####################################################
+    val_loss, final_metrics = validate(
+        model=model,
+        val_loader=val_loader,
+        criterion=criterion,
+        device=device,
+    )
+
+    save_metrics(
+        final_metrics,
+        OUTPUT_DIR,
+    )
+
+    logger.info("Final metrics saved.")
 
     ####################################################
-    # Test
+    # Test (Optional)
     ####################################################
     RUN_TEST = False
 
@@ -253,7 +343,5 @@ def main():
             criterion=criterion,
             device=device,
         )
-
-
 if __name__ == "__main__":
     main()

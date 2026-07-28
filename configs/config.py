@@ -12,7 +12,7 @@ class Config:
 
     # Training
     BATCH_SIZE = 8
-    EPOCHS = 1
+    EPOCHS = 2            # Changed from 1 to 50
 
     LEARNING_RATE = 1e-4
     WEIGHT_DECAY = 1e-5
@@ -25,4 +25,5 @@ class Config:
     # Misc
     RANDOM_SEED = 42
 
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

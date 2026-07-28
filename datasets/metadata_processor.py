@@ -123,6 +123,7 @@ class MetadataProcessor:
 
             numeric = (
                 df[self.numerical_columns]
+                .infer_objects(copy=False)
                 .fillna(0)
                 .astype(float)
             )

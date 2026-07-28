@@ -40,7 +40,14 @@ class MILK10kDataset(Dataset):
         # -------------------------
 
         self.metadata = pd.read_csv(metadata_csv)
+        # -------------------------
+        # Fast metadata lookup
+        # -------------------------
 
+        self.metadata_lookup = {
+            lesion_id: group
+            for lesion_id, group in self.metadata.groupby("lesion_id")
+        }
         # Training dataset?
         self.is_train = groundtruth_csv is not None
 
@@ -58,6 +65,7 @@ class MILK10kDataset(Dataset):
             )
 
             self.samples = self.labels.copy()
+            self.labels_array = self.samples["label"].to_numpy()
 
         else:
 
@@ -83,9 +91,7 @@ class MILK10kDataset(Dataset):
         # Metadata rows
         # -------------------------
 
-        lesion_rows = self.metadata[
-            self.metadata["lesion_id"] == lesion_id
-        ]
+        lesion_rows = self.metadata_lookup[lesion_id]
 
         if len(lesion_rows) != 2:
             raise ValueError(
@@ -159,15 +165,11 @@ class MILK10kDataset(Dataset):
         # Read Images
         # -------------------------
 
-        clinical_image = (
-            Image.open(clinical_path)
-            .convert("RGB")
-        )
+        with Image.open(clinical_path) as img:
+            clinical_image = img.convert("RGB")
 
-        dermoscopy_image = (
-            Image.open(derm_path)
-            .convert("RGB")
-        )
+        with Image.open(derm_path) as img:
+            dermoscopy_image = img.convert("RGB")
 
         # -------------------------
         # Image Transform
@@ -210,9 +212,7 @@ class MILK10kDataset(Dataset):
 
         if self.is_train:
 
-            label = int(
-                self.samples.iloc[idx]["label"]
-            )
+            label = int(self.labels_array[idx])
 
         else:
 

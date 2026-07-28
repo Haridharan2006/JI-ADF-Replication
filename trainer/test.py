@@ -1,6 +1,7 @@
 # trainer/test.py
 
 import os
+from venv import logger
 
 import numpy as np
 import pandas as pd
@@ -119,6 +120,11 @@ def test(
             exist_ok=True,
         )
 
+        confidence = np.max(
+            np.array(all_probabilities),
+            axis=1,
+        )
+
         if has_labels:
 
             df = pd.DataFrame({
@@ -127,6 +133,8 @@ def test(
 
                 "Predicted Label": all_predictions,
 
+                "Confidence": confidence,
+
             })
 
         else:
@@ -134,6 +142,8 @@ def test(
             df = pd.DataFrame({
 
                 "Predicted Label": all_predictions,
+
+                "Confidence": confidence,
 
             })
 
@@ -148,8 +158,8 @@ def test(
 
     if not has_labels:
 
-        print("No ground-truth labels found.")
-        print("Predictions saved successfully.")
+        logger.info("No ground-truth labels found.")
+        logger.info("Predictions saved successfully.")
 
         return None, None
 

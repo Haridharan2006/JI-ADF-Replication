@@ -73,7 +73,7 @@ def train_one_epoch(
 
         running_loss += loss.item()
 
-        prediction = outputs["prediction_logits"].argmax(dim=1)
+        prediction = outputs["prediction_probs"].argmax(dim=1)
 
         correct += (prediction == labels).sum().item()
         total += labels.size(0)
