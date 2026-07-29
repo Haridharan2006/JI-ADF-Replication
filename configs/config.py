@@ -12,7 +12,7 @@ class Config:
 
     # Training
     BATCH_SIZE = 8
-    EPOCHS = 2            # Changed from 1 to 50
+    EPOCHS = 50            # Changed from 1 to 50
 
     LEARNING_RATE = 1e-4
     WEIGHT_DECAY = 1e-5
