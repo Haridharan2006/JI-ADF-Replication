@@ -35,7 +35,6 @@ def main():
     # Seed & Device
     ####################################################
     set_seed(Config.RANDOM_SEED)
-    torch.backends.cudnn.benchmark = True
     logger = get_logger()
 
     device = torch.device(
@@ -263,6 +262,7 @@ def main():
 
             best_f1 = metrics["f1_score"]
             best_epoch = epoch + 1
+
             save_checkpoint(
                 model=model,
                 optimizer=optimizer,
@@ -270,6 +270,10 @@ def main():
                 best_metric=best_f1,
                 filepath=CHECKPOINT_DIR / "best_model.pth",
             )
+
+            logger.info("Best model saved.")
+
+            # Save the actual latest model every epoch
             save_checkpoint(
                 model=model,
                 optimizer=optimizer,

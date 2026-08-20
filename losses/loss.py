@@ -1,6 +1,5 @@
 # losses/loss.py
 
-import torch
 import torch.nn as nn
 
 
@@ -9,18 +8,18 @@ class JIADFLoss(nn.Module):
     Loss function for JI-ADF.
 
     Total Loss =
-        λ1 * Image Loss +
-        λ2 * Metadata Loss +
-        λ3 * Joint Loss +
-        λ4 * Final Prediction Loss
+        0.25 * Image Loss +
+        0.25 * Metadata Loss +
+        0.50 * Joint Loss +
+        1.00 * Final Prediction Loss
     """
 
     def __init__(
         self,
-        image_weight=1.0,
-        metadata_weight=1.0,
-        joint_weight=1.0,
-        final_weight=1.0
+        image_weight=0.25,
+        metadata_weight=0.25,
+        joint_weight=0.50,
+        final_weight=1.00,
     ):
         super().__init__()
 
@@ -34,55 +33,47 @@ class JIADFLoss(nn.Module):
     def forward(
         self,
         outputs,
-        labels
+        labels,
     ):
 
+        # Individual image branch loss
         image_loss = self.ce(
             outputs["image_logits"],
-            labels
+            labels,
         )
 
+        # Individual metadata branch loss
         metadata_loss = self.ce(
             outputs["metadata_logits"],
-            labels
+            labels,
         )
 
+        # Joint multimodal branch loss
         joint_loss = self.ce(
             outputs["joint_logits"],
-            labels
+            labels,
         )
 
-        # prediction is probability from ADF
-        # Convert to log-probabilities for NLLLoss
+        # Final Adaptive Decision Fusion prediction loss
         prediction_loss = self.ce(
             outputs["prediction_logits"],
-            labels
+            labels,
         )
 
+        # Weighted total loss
         total_loss = (
-
-            self.image_weight * image_loss +
-
-            self.metadata_weight * metadata_loss +
-
-            self.joint_weight * joint_loss +
-
-            self.final_weight * prediction_loss
-
+            self.image_weight * image_loss
+            + self.metadata_weight * metadata_loss
+            + self.joint_weight * joint_loss
+            + self.final_weight * prediction_loss
         )
 
         losses = {
-
             "total_loss": total_loss,
-
             "image_loss": image_loss,
-
             "metadata_loss": metadata_loss,
-
             "joint_loss": joint_loss,
-
-            "prediction_loss": prediction_loss
-
+            "prediction_loss": prediction_loss,
         }
 
         return losses

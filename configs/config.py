@@ -11,7 +11,7 @@ class Config:
     METADATA_EMBED_DIM = 256
 
     # Training
-    BATCH_SIZE = 8
+    BATCH_SIZE = 16
     EPOCHS = 50            # Changed from 1 to 50
 
     LEARNING_RATE = 1e-4
@@ -25,5 +25,4 @@ class Config:
     # Misc
     RANDOM_SEED = 42
 
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
